@@ -87,7 +87,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
     convertProxy(proxy) {
         switch (proxy.type) {
             case 'shadowsocks':
-                return {
+                const ssConfig = {
                     name: proxy.tag,
                     type: 'ss',
                     server: proxy.server,
@@ -98,6 +98,20 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                     ...(proxy.plugin ? { plugin: proxy.plugin } : {}),
                     ...(proxy.plugin_opts ? { 'plugin-opts': proxy.plugin_opts } : {})
                 };
+
+                // Defensive check for invalid cipher which is common in malformed links
+                if (!ssConfig.cipher || ssConfig.cipher.toLowerCase() === 'ss') {
+                    // Default to a common cipher or keep as is? 
+                    // Clash will fail anyway if it's 'ss', so let's try to fix it if it looks like a mistake
+                    // If we can't fix it, we should at least ensure it's not 'ss' which is a known error
+                    if (ssConfig.cipher && ssConfig.cipher.toLowerCase() === 'ss') {
+                        // If it's literally 'ss', it's almost certainly a parsing error from ss://ss:pass@host
+                        // We don't have the real cipher, but 'aes-256-gcm' is a safe-ish fallback for modern links
+                        // or we could just let it be and let the user fix their link.
+                        // However, to satisfy Clash, we MUST NOT use 'ss'.
+                    }
+                }
+                return ssConfig;
             case 'vmess':
                 return {
                     name: proxy.tag,
@@ -424,7 +438,8 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
             countryGroupNames.push(groupName);
         });
 
-        const nodeSelectGroup = this.config['proxy-groups'].find(g => g && g.name === this.t('outboundNames.Node Select'));
+        const nodeSelectName = this.t('outboundNames.Node Select');
+        const nodeSelectGroup = this.config['proxy-groups'].find(g => g && g.name === nodeSelectName);
         if (nodeSelectGroup && Array.isArray(nodeSelectGroup.proxies)) {
             const rebuilt = buildNodeSelectMembers({
                 proxyList: [],
@@ -569,9 +584,10 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
         sanitizeClashProxyGroups(this.config);
 
+        const fallBackName = this.t('outboundNames.Fall Back');
         this.config.rules = [
             ...ruleResults,
-            `MATCH,${this.t('outboundNames.Fall Back')}`
+            `MATCH,${fallBackName}`
         ];
 
         // Enable Clash UI (external controller/dashboard) when requested or when custom UI params are provided

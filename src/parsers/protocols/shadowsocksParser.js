@@ -114,12 +114,24 @@ export function parseShadowsocks(url) {
         if (!serverPart) {
             const decodedLegacy = base64ToBinary(mainPart);
             const [methodAndPass, serverInfo] = decodedLegacy.split('@');
-            const [method, password] = methodAndPass.split(':');
+            let parts = methodAndPass.split(':');
+            
+            if (parts[0].toLowerCase() === 'ss' && parts.length > 2) {
+                parts.shift();
+            }
+            
+            let method = parts[0];
+            let password = parts.slice(1).join(':');
             const [server, server_port] = parseServer(serverInfo);
             return createConfig(tag, server, server_port, method, password, pluginInfo);
         }
 
         let decodedParts = base64ToBinary(decodeURIComponent(base64)).split(':');
+        
+        if (decodedParts[0].toLowerCase() === 'ss' && decodedParts.length > 2) {
+            decodedParts.shift();
+        }
+        
         let method = decodedParts[0];
         let password = decodedParts.slice(1).join(':');
         let [server, server_port] = parseServer(serverPart);
