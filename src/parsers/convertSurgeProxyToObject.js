@@ -103,12 +103,13 @@ export function convertSurgeProxyToObject(line) {
     switch (type) {
         case 'ss':
         case 'shadowsocks':
+            const method = params['encrypt-method'] || params.method || params.cipher;
             return {
                 tag,
                 type: 'shadowsocks',
                 server,
                 server_port: port,
-                method: params['encrypt-method'] || params.method || params.cipher,
+                method: (typeof method === 'string' && method.toLowerCase() === 'ss') ? 'aes-256-gcm' : method,
                 password: params.password,
                 network: 'tcp',
                 tcp_fast_open: parseBool(params.tfo || params['tcp-fast-open'])

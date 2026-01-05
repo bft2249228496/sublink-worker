@@ -9,12 +9,13 @@ export function convertYamlProxyToObject(p) {
     switch (type) {
         case 'ss':
         case 'shadowsocks':
+            const method = p.cipher || p.method;
             return {
                 tag: name,
                 type: 'shadowsocks',
                 server: p.server,
                 server_port: parseInt(p.port),
-                method: p.cipher || p.method,
+                method: (typeof method === 'string' && method.toLowerCase() === 'ss') ? 'aes-256-gcm' : method,
                 password: p.password,
                 network: 'tcp',
                 tcp_fast_open: !!p['fast-open'],

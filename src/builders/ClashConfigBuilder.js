@@ -101,15 +101,8 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
                 // Defensive check for invalid cipher which is common in malformed links
                 if (!ssConfig.cipher || ssConfig.cipher.toLowerCase() === 'ss') {
-                    // Default to a common cipher or keep as is? 
-                    // Clash will fail anyway if it's 'ss', so let's try to fix it if it looks like a mistake
-                    // If we can't fix it, we should at least ensure it's not 'ss' which is a known error
-                    if (ssConfig.cipher && ssConfig.cipher.toLowerCase() === 'ss') {
-                        // If it's literally 'ss', it's almost certainly a parsing error from ss://ss:pass@host
-                        // We don't have the real cipher, but 'aes-256-gcm' is a safe-ish fallback for modern links
-                        // or we could just let it be and let the user fix their link.
-                        // However, to satisfy Clash, we MUST NOT use 'ss'.
-                    }
+                    console.warn(`[ClashConfigBuilder] Invalid Shadowsocks cipher detected: "${ssConfig.cipher}" for node "${ssConfig.name}". Overriding with aes-256-gcm.`);
+                    ssConfig.cipher = 'aes-256-gcm';
                 }
                 return ssConfig;
             case 'vmess':
