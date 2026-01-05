@@ -1,3 +1,5 @@
+import { normalizeGroupName } from './groupNameUtils.js';
+
 export function emitClashRules(rules = [], translator) {
     if (!translator) {
         throw new Error('emitClashRules requires a translator function');
@@ -46,13 +48,23 @@ export function emitClashRules(rules = [], translator) {
     return results;
 }
 
-const normalize = (s) => typeof s === 'string' ? s.trim() : s;
+const normalize = (s) => normalizeGroupName(s);
 
 export function sanitizeClashProxyGroups(config) {
     const groups = config['proxy-groups'] || [];
     if (!Array.isArray(groups) || groups.length === 0) {
         return;
     }
+
+    // Normalize all proxy names in the main proxies list
+    if (Array.isArray(config.proxies)) {
+        config.proxies.forEach(p => {
+            if (p && typeof p.name === 'string') {
+                p.name = normalize(p.name);
+            }
+        });
+    }
+
     const proxyNames = new Set((config.proxies || []).map(p => normalize(p?.name)).filter(Boolean));
     const groupNames = new Set(groups.map(g => normalize(g?.name)).filter(Boolean));
     const validNames = new Set(['DIRECT', 'REJECT'].map(normalize));
@@ -62,7 +74,7 @@ export function sanitizeClashProxyGroups(config) {
     config['proxy-groups'] = groups.map(group => {
         if (!group || !Array.isArray(group.proxies)) return group;
         const normalizedProxies = group.proxies
-            .map(x => typeof x === 'string' ? x.trim() : x)
+            .map(x => typeof x === 'string' ? normalize(x) : x)
             .filter(x => typeof x === 'string');
         const seen = new Set();
         const deduped = normalizedProxies.filter(value => {

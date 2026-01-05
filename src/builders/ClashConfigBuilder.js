@@ -266,6 +266,9 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
     }
 
     addProxyToConfig(proxy) {
+        if (proxy && typeof proxy.name === 'string') {
+            proxy.name = normalizeGroupName(proxy.name);
+        }
         this.config.proxies = this.config.proxies || [];
         addProxyWithDedup(this.config.proxies, proxy, {
             getName: (item) => item?.name,
